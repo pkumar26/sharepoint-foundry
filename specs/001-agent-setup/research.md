@@ -76,7 +76,7 @@
 - **App registration**: Backend API app with client secret/certificate, exposed scope `api://<id>/access_as_user`, Graph delegated permissions.
 - **Token validation**: Validate incoming token's `aud`, `iss`, `exp` claims. Use `PyJWT` or framework middleware.
 - **Token cache**: MSAL handles caching/refresh. Use `SerializableTokenCache` partitioned per user for web servers.
-- **Note on constitution**: Constitution says "Authentication MUST use Azure Identity (DefaultAzureCredential or managed identity)". For OBO specifically, `DefaultAzureCredential` cannot be used — `msal` is required. `DefaultAzureCredential` is still used for service-to-service auth (Cosmos DB, AI Search, OpenAI). This is a justified exception documented in Complexity Tracking.
+- **Note on constitution**: Constitution Principle V explicitly permits MSAL for user-delegation (OBO) flows. `DefaultAzureCredential` is still used for service-to-service auth (Cosmos DB, AI Search, OpenAI). No exception required.
 
 ## 5. Azure Container Apps Deployment
 

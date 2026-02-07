@@ -52,8 +52,9 @@ The project MUST keep its dependency tree as small as possible.
   and why a stdlib alternative is insufficient.
 - Transitive dependency count MUST be audited before adding any new
   package; prefer packages with zero or few transitive dependencies.
-- The Microsoft Agent Framework Python SDK (`microsoft-agents`) is the
-  primary runtime dependency and is exempt from justification.
+- The Microsoft Agent Framework Python SDK (`autogen-agentchat`,
+  `autogen-ext`) is the primary runtime dependency and is exempt
+  from justification.
 - Utility libraries that duplicate stdlib functionality (e.g., `six`,
   `pathlib2`, `typing-extensions` on Python ≥ 3.11) MUST NOT be added.
 - Pinned versions MUST be used for all dependencies to guarantee
@@ -65,7 +66,7 @@ installs, and fewer breaking upstream changes.
 ### III. Agent Framework First
 
 All agent and workflow logic MUST be built on the Microsoft Agent
-Framework Python SDK.
+Framework Python SDK (`autogen-agentchat`, `autogen-ext`).
 
 - No alternative agent frameworks (LangChain, AutoGen legacy,
   CrewAI, etc.) are permitted in this project.
@@ -144,7 +145,7 @@ document expected behaviour and catch regressions early.
 
 - **Language**: Python 3.11+
 - **Agent SDK**: Microsoft Agent Framework Python SDK
-  (`microsoft-agents`)
+  (`autogen-agentchat`, `autogen-ext`)
 - **SharePoint API**: Microsoft Graph REST API v1.0
 - **Authentication**: `azure-identity` (DefaultAzureCredential)
 - **Testing**: `pytest` with `pytest-asyncio` for async workflows
@@ -208,4 +209,4 @@ It supersedes all other practice documents or informal agreements.
 - Compliance reviews SHOULD occur quarterly to ensure the
   constitution reflects current project realities.
 
-**Version**: 1.0.0 | **Ratified**: 2026-02-07 | **Last Amended**: 2026-02-07
+**Version**: 1.1.0 | **Ratified**: 2026-02-07 | **Last Amended**: 2026-02-07

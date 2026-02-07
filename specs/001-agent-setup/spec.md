@@ -75,7 +75,7 @@ A user asks a question and receives the answer promptly. The agent provides a ty
 ### Edge Cases
 
 - What happens when a SharePoint document is deleted or moved after the agent has indexed it? The agent must gracefully handle missing documents and not return stale or broken references.
-- What happens when a user asks a question in a language different from the document language? The agent must respond in the user's language if the content can be translated from the source document, or clearly state that it cannot answer in that language.
+- What happens when a user asks a question in a language other than English? The agent supports English only (see Assumptions). It MUST respond with a message stating that only English queries are currently supported. Multi-language support is a future enhancement.
 - What happens when a SharePoint site is temporarily unavailable? The agent must inform the user that the service is temporarily degraded and retry transparently.
 - What happens when a user sends an extremely long question (e.g., pasting an entire document)? The agent must reject inputs exceeding a reasonable length limit with a helpful message.
 - What happens when a user asks a question that partially matches document content but could be misleading? The agent must only respond with information it can confidently ground in the documents, and must indicate when confidence is low.
@@ -106,7 +106,7 @@ A user asks a question and receives the answer promptly. The agent provides a ty
 - **FR-008**: System MUST enforce SharePoint document-level permissions — if a user cannot access a document in SharePoint they MUST NOT receive answers derived from that document.
 - **FR-009**: Agent MUST respond with a clear refusal message when a question cannot be answered from the available SharePoint documents.
 - **FR-010**: System MUST support multiple concurrent users without cross-contamination of conversations or identity.
-- **FR-011**: System MUST display a progress indicator while the agent is processing a question.
+- **FR-011**: The API consumer (client) SHOULD display a progress indicator while awaiting the agent's response. The backend API provides timing metadata via structured logs but does not push progress events.
 - **FR-012**: System MUST reject user inputs exceeding a defined maximum length and return a helpful error message.
 - **FR-013**: System MUST re-prompt the user for authentication when their Entra session expires or token is revoked.
 - **FR-014**: System MUST handle SharePoint service unavailability gracefully, informing the user and retrying transparently.

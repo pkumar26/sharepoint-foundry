@@ -41,7 +41,7 @@
 - [ ] T011 [P] Create SearchResult model in `src/models/document.py` — Pydantic model with `chunk_id`, `document_title`, `content`, `source_url`, `site_name`, `file_type`, `last_modified`, `relevance_score` per data-model.md
 - [ ] T012 [P] Create ErrorResponse model in `src/models/errors.py` — Pydantic model matching `ErrorResponse` schema from openapi.yaml (error code enum + message)
 - [ ] T013 Create FastAPI application skeleton in `src/main.py` — app factory with lifespan handler, CORS middleware, health endpoint (`GET /health` returning `HealthResponse`), structured logging integration
-- [ ] T014 Create AuditEntry model and audit service in `src/services/audit.py` — Pydantic model per data-model.md; async `log_query()` function that writes structured JSON audit log entries (FR-016)
+- [ ] T014 Create AuditEntry model and audit service in `src/services/audit.py` — Pydantic model per data-model.md; async `log_query()` function that writes structured JSON audit log entries (FR-016); include unit test in `tests/unit/test_audit.py`
 - [ ] T015 Unit test for config loader in `tests/unit/test_config.py`
 - [ ] T016 [P] Unit test for User model JWT parsing in `tests/unit/test_user_model.py`
 
@@ -136,6 +136,7 @@
 - [ ] T042 [US4] Implement per-user rate limiter in `src/services/rate_limiter.py` — `RateLimiter` class with sliding-window algorithm using `asyncio.Lock` + `collections.deque` of timestamps per user_id; `check_rate_limit(user_id)` returns remaining count or raises; configurable limit from config (FR-017)
 - [ ] T043 [US4] Integrate rate limiter into chat endpoint in `src/main.py` — call `rate_limiter.check_rate_limit(user_id)` before agent invocation; return 429 with `rate_limit_exceeded` error and helpful message when exceeded; do NOT discard conversation context on rate limit (FR-017)
 - [ ] T044 [US4] Add response timing and performance logging in `src/main.py` — measure end-to-end latency per request, log to structured JSON logs, include `latency_ms` in audit entry; log warning if response exceeds 5s threshold
+- [ ] T044b [US4] Integration test for concurrent user isolation in `tests/integration/test_concurrent_users.py` — send 10 parallel requests with different user tokens, verify no identity or conversation cross-contamination (FR-010)
 
 **Checkpoint**: User Story 4 complete — rate limiting enforced at 20 queries/min/user, response timing measured and logged, performance targets achievable. Testable independently.
 

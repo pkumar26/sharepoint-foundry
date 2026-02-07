@@ -10,7 +10,7 @@ Build a SharePoint document Q&A agent using the Microsoft Agent Framework Python
 ## Technical Context
 
 **Language/Version**: Python 3.11+  
-**Primary Dependencies**: Microsoft Agent Framework Python SDK (`microsoft-agents`), `azure-identity`, `azure-search-documents`, `azure-cosmos`, `openai` (Azure OpenAI client)  
+**Primary Dependencies**: Microsoft Agent Framework Python SDK (`autogen-agentchat==0.7.5`, `autogen-ext[openai,azure]==0.7.5`), `azure-identity`, `azure-search-documents`, `azure-cosmos`, `msal`, `fastapi`, `uvicorn`, `pydantic`  
 **Storage**: Azure Cosmos DB (conversation history), Azure AI Search (document index with vector embeddings)  
 **Testing**: `pytest` with `pytest-asyncio`  
 **Target Platform**: Azure Container Apps (single-region, auto-scale, managed identity)  
@@ -79,7 +79,6 @@ src/
 │   ├── __init__.py
 │   ├── auth.py          # Entra ID authentication + token management
 │   ├── search.py        # Azure AI Search client (hybrid retrieval)
-│   ├── sharepoint.py    # Microsoft Graph API client for SharePoint
 │   ├── conversation.py  # Cosmos DB conversation persistence
 │   ├── rate_limiter.py  # Per-user rate limiting
 │   └── audit.py         # Audit trail logging
@@ -92,7 +91,7 @@ tests/
 │   ├── sharepoint_responses.json
 │   └── sample_documents/
 ├── contract/            # API contract tests
-│   └── test_agent_api.py
+│   └── test_chat_api.py
 ├── integration/         # End-to-end workflow tests
 │   ├── test_qa_flow.py
 │   ├── test_auth_flow.py
