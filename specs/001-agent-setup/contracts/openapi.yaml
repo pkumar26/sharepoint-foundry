@@ -1,0 +1,345 @@
+openapi: "3.1.0"
+info:
+  title: SharePoint Document Q&A Agent API
+  version: "1.0.0"
+  description: |
+    REST API for the SharePoint Document Q&A Agent. All endpoints require
+    a valid Microsoft Entra ID Bearer token in the Authorization header.
+
+servers:
+  - url: https://{host}
+    variables:
+      host:
+        default: localhost:8000
+
+security:
+  - entraBearer: []
+
+paths:
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check endpoint
+      description: Returns service health status. Used by Container Apps probes.
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /chat:
+    post:
+      operationId: sendMessage
+      summary: Send a message to the agent
+      description: |
+        Submit a user question. The agent searches SharePoint documents,
+        generates a grounded answer with source citations, and returns it.
+        If a conversation_id is provided, the message is appended to that
+        conversation. Otherwise a new conversation is created.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: Agent response with source references
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+        "400":
+          description: Invalid request (e.g., input exceeds max length)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid Entra token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limit exceeded (20 queries/minute)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: rate_limit_exceeded
+                message: "You've sent too many requests. Please wait before trying again."
+        "503":
+          description: SharePoint service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /conversations:
+    get:
+      operationId: listConversations
+      summary: List user's conversations
+      description: |
+        Returns all active conversations for the authenticated user,
+        ordered by most recent first. Each entry includes a preview
+        of the last message.
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, archived]
+            default: active
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationListResponse"
+        "401":
+          description: Missing or invalid Entra token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /conversations/{conversation_id}:
+    get:
+      operationId: getConversation
+      summary: Get a conversation with full message history
+      description: |
+        Returns the complete conversation including all messages and
+        source references. Only accessible by the conversation owner.
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Full conversation with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationDetail"
+        "401":
+          description: Missing or invalid Entra token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Conversation not found or not owned by user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    entraBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Microsoft Entra ID access token
+
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded]
+        version:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ChatRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          maxLength: 4000
+          description: User's question text
+        conversation_id:
+          type: string
+          format: uuid
+          description: |
+            Existing conversation ID to continue. If omitted, a new
+            conversation is created.
+
+    ChatResponse:
+      type: object
+      required: [conversation_id, message]
+      properties:
+        conversation_id:
+          type: string
+          format: uuid
+        message:
+          $ref: "#/components/schemas/AgentMessage"
+
+    AgentMessage:
+      type: object
+      required: [id, role, content, timestamp]
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [assistant]
+        content:
+          type: string
+          description: Agent's grounded answer text
+        source_references:
+          type: array
+          items:
+            $ref: "#/components/schemas/SourceReference"
+        timestamp:
+          type: string
+          format: date-time
+
+    SourceReference:
+      type: object
+      required: [document_title, document_url, site_name]
+      properties:
+        document_title:
+          type: string
+        document_url:
+          type: string
+          format: uri
+        site_name:
+          type: string
+        excerpt:
+          type: string
+          maxLength: 500
+        relevance_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+
+    ConversationListResponse:
+      type: object
+      required: [conversations, total]
+      properties:
+        conversations:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversationSummary"
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+    ConversationSummary:
+      type: object
+      required: [id, title, last_active_at, status, preview]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        last_active_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [active, archived]
+        preview:
+          type: string
+          maxLength: 200
+          description: Last message content preview
+
+    ConversationDetail:
+      type: object
+      required: [id, user_id, title, messages, status, created_at, last_active_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageItem"
+        status:
+          type: string
+          enum: [active, archived]
+        created_at:
+          type: string
+          format: date-time
+        last_active_at:
+          type: string
+          format: date-time
+
+    MessageItem:
+      type: object
+      required: [id, role, content, timestamp]
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        source_references:
+          type: array
+          items:
+            $ref: "#/components/schemas/SourceReference"
+        timestamp:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code
+          enum:
+            - invalid_request
+            - input_too_long
+            - unauthorized
+            - token_expired
+            - rate_limit_exceeded
+            - not_found
+            - service_unavailable
+        message:
+          type: string
+          description: Human-readable error description
