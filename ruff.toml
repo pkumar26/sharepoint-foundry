@@ -1,0 +1,33 @@
+# Ruff linter + formatter configuration
+target-version = "py311"
+line-length = 100
+
+[lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "TCH",  # flake8-type-checking
+    "RUF",  # ruff-specific rules
+]
+ignore = [
+    "E501",   # line length handled by formatter
+    "B008",   # FastAPI Depends() in defaults is idiomatic
+    "TC001",  # type-checking imports: not enforced for simplicity
+    "TC002",  # type-checking imports: not enforced for simplicity
+    "TC003",  # type-checking imports: not enforced for simplicity
+    "UP042",  # str + Enum is valid for JSON-serializable enums
+    "RUF043", # regex metachar in match= is intentional for tests
+]
+
+[lint.isort]
+known-first-party = ["src"]
+
+[format]
+quote-style = "double"
+indent-style = "space"

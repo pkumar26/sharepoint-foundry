@@ -1,0 +1,169 @@
+{
+  "graph_api_responses": {
+    "user_profile": {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "displayName": "Jane Smith",
+      "mail": "jane.smith@contoso.com",
+      "userPrincipalName": "jane.smith@contoso.com",
+      "memberOf": [
+        {
+          "@odata.type": "#microsoft.graph.group",
+          "id": "group-engineering-001",
+          "displayName": "Engineering"
+        },
+        {
+          "@odata.type": "#microsoft.graph.group",
+          "id": "group-all-employees-002",
+          "displayName": "All Employees"
+        }
+      ]
+    },
+    "drive_items": [
+      {
+        "id": "driveitem-001",
+        "name": "Employee-Handbook-2024.pdf",
+        "webUrl": "https://contoso.sharepoint.com/sites/HR/Shared Documents/Employee-Handbook-2024.pdf",
+        "parentReference": {
+          "siteId": "contoso.sharepoint.com,site-hr-001"
+        },
+        "file": {
+          "mimeType": "application/pdf"
+        },
+        "lastModifiedDateTime": "2024-11-15T10:30:00Z",
+        "size": 2048576
+      },
+      {
+        "id": "driveitem-002",
+        "name": "IT-Security-Policy.docx",
+        "webUrl": "https://contoso.sharepoint.com/sites/IT/Shared Documents/IT-Security-Policy.docx",
+        "parentReference": {
+          "siteId": "contoso.sharepoint.com,site-it-002"
+        },
+        "file": {
+          "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        },
+        "lastModifiedDateTime": "2024-12-01T14:00:00Z",
+        "size": 512000
+      }
+    ]
+  },
+  "ai_search_responses": {
+    "hybrid_search_results": {
+      "@odata.context": "https://contoso-search.search.windows.net/indexes('sharepoint-docs-index')/$metadata#docs(*)",
+      "@odata.count": 3,
+      "value": [
+        {
+          "@search.score": 0.95,
+          "@search.rerankerScore": 3.82,
+          "chunk_id": "chunk-001-page3",
+          "document_title": "Employee Handbook 2024",
+          "content": "Annual leave policy: All full-time employees are entitled to 25 days of paid annual leave per calendar year. Leave must be requested through the HR portal at least 2 weeks in advance for periods exceeding 5 consecutive days. Unused leave may be carried forward up to 5 days into the next calendar year.",
+          "source_url": "https://contoso.sharepoint.com/sites/HR/Shared Documents/Employee-Handbook-2024.pdf",
+          "site_name": "HR",
+          "file_type": "pdf",
+          "last_modified": "2024-11-15T10:30:00Z",
+          "acl_user_ids": [
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002"
+          ],
+          "acl_group_ids": [
+            "group-all-employees-002"
+          ]
+        },
+        {
+          "@search.score": 0.87,
+          "@search.rerankerScore": 3.15,
+          "chunk_id": "chunk-002-page1",
+          "document_title": "IT Security Policy",
+          "content": "Password requirements: All employees must use passwords of at least 14 characters, including uppercase, lowercase, numbers, and special characters. Passwords must be changed every 90 days. Multi-factor authentication (MFA) is mandatory for all cloud service access.",
+          "source_url": "https://contoso.sharepoint.com/sites/IT/Shared Documents/IT-Security-Policy.docx",
+          "site_name": "IT",
+          "file_type": "docx",
+          "last_modified": "2024-12-01T14:00:00Z",
+          "acl_user_ids": [],
+          "acl_group_ids": [
+            "group-engineering-001",
+            "group-all-employees-002"
+          ]
+        },
+        {
+          "@search.score": 0.72,
+          "@search.rerankerScore": 2.45,
+          "chunk_id": "chunk-003-page7",
+          "document_title": "Remote Work Guidelines",
+          "content": "Work-from-home policy: Employees may work remotely up to 3 days per week with manager approval. A dedicated workspace and reliable internet connection are required. Employees must be reachable during core hours (10:00-16:00 local time).",
+          "source_url": "https://contoso.sharepoint.com/sites/HR/Shared Documents/Remote-Work-Guidelines.pdf",
+          "site_name": "HR",
+          "file_type": "pdf",
+          "last_modified": "2024-10-20T09:00:00Z",
+          "acl_user_ids": [],
+          "acl_group_ids": [
+            "group-all-employees-002"
+          ]
+        }
+      ]
+    },
+    "no_results_response": {
+      "@odata.context": "https://contoso-search.search.windows.net/indexes('sharepoint-docs-index')/$metadata#docs(*)",
+      "@odata.count": 0,
+      "value": []
+    },
+    "permission_denied_response": {
+      "@odata.context": "https://contoso-search.search.windows.net/indexes('sharepoint-docs-index')/$metadata#docs(*)",
+      "@odata.count": 1,
+      "value": [
+        {
+          "@search.score": 0.91,
+          "chunk_id": "chunk-004-confidential",
+          "document_title": "Executive Compensation Plan",
+          "content": "This document contains confidential information about executive compensation structures.",
+          "source_url": "https://contoso.sharepoint.com/sites/Executive/Shared Documents/Compensation-Plan.docx",
+          "site_name": "Executive",
+          "file_type": "docx",
+          "last_modified": "2024-12-10T16:00:00Z",
+          "acl_user_ids": [
+            "00000000-0000-0000-0000-000000000099"
+          ],
+          "acl_group_ids": [
+            "group-executives-099"
+          ]
+        }
+      ]
+    }
+  },
+  "cosmos_db_responses": {
+    "conversation_document": {
+      "id": "conv-00000000-0000-0000-0000-000000000001",
+      "user_id": "00000000-0000-0000-0000-000000000001",
+      "title": "Leave policy questions",
+      "messages": [
+        {
+          "id": "msg-001",
+          "role": "user",
+          "content": "What is the annual leave policy?",
+          "source_references": [],
+          "timestamp": "2024-12-15T10:00:00Z"
+        },
+        {
+          "id": "msg-002",
+          "role": "assistant",
+          "content": "According to the Employee Handbook 2024, all full-time employees are entitled to 25 days of paid annual leave per calendar year.",
+          "source_references": [
+            {
+              "document_title": "Employee Handbook 2024",
+              "document_url": "https://contoso.sharepoint.com/sites/HR/Shared Documents/Employee-Handbook-2024.pdf",
+              "site_name": "HR",
+              "excerpt": "All full-time employees are entitled to 25 days of paid annual leave per calendar year.",
+              "relevance_score": 0.95
+            }
+          ],
+          "timestamp": "2024-12-15T10:00:05Z"
+        }
+      ],
+      "status": "active",
+      "created_at": "2024-12-15T10:00:00Z",
+      "last_active_at": "2024-12-15T10:00:05Z",
+      "ttl": 7776000
+    }
+  }
+}

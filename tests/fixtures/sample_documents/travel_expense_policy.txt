@@ -1,0 +1,30 @@
+This is a sample plain-text document for integration testing.
+
+Title: Company Travel Expense Policy
+
+1. Purpose
+This policy defines the guidelines for employee business travel expenses at Contoso Corporation.
+
+2. Eligibility
+All full-time and part-time employees traveling for company business are eligible for expense reimbursement.
+
+3. Approval Process
+- Travel under $500: Manager approval required
+- Travel $500-$2000: Director approval required
+- Travel over $2000: VP approval required
+
+4. Reimbursable Expenses
+- Airfare (economy class for flights under 6 hours)
+- Hotel accommodation (up to $200/night)
+- Meals (up to $75/day)
+- Ground transportation
+- Conference registration fees
+
+5. Non-Reimbursable Expenses
+- Personal entertainment
+- Alcohol
+- First-class upgrades without approval
+- Travel insurance (covered by company policy)
+
+Last Updated: November 2024
+Author: Finance Department

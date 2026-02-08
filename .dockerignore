@@ -1,0 +1,39 @@
+# Version control
+.git/
+.github/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Testing
+tests/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Specs / docs
+specs/
+.specify/
+
+# Ruff
+.ruff_cache/

@@ -1,0 +1,44 @@
+Contoso IT Acceptable Use Policy
+
+Version: 3.1
+Effective Date: January 2024
+
+OVERVIEW
+
+This document sets forth the acceptable use policy for all Contoso information 
+technology resources, including computers, networks, email, and cloud services.
+
+SCOPE
+
+This policy applies to all employees, contractors, and third-party users who
+access Contoso IT resources.
+
+KEY REQUIREMENTS
+
+1. Email Usage
+   - Company email is for business purposes
+   - Do not send sensitive data without encryption
+   - Report suspected phishing to security@contoso.com
+
+2. Internet Usage
+   - Streaming media should be limited during business hours
+   - Downloading unauthorized software is prohibited
+   - VPN must be used when accessing company resources remotely
+
+3. Device Security
+   - Lock your workstation when away (Win+L or Cmd+Ctrl+Q)
+   - Enable full-disk encryption on all devices
+   - Keep operating systems and applications updated
+
+4. Data Classification
+   - Public: General information, marketing materials
+   - Internal: Business documents, process guides
+   - Confidential: Financial data, HR records, PII
+   - Restricted: Trade secrets, security credentials
+
+VIOLATIONS
+
+Violations of this policy may result in disciplinary action up to and
+including termination of employment.
+
+Contact: it-security@contoso.com

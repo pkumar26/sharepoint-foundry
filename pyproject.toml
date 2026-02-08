@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sharepoint-foundryagent"
+version = "0.1.0"
+description = "SharePoint Document Q&A Agent using Microsoft Agent Framework"
+requires-python = ">=3.11"
+dependencies = [
+    # Microsoft Agent Framework SDK — agent definitions, orchestration
+    "autogen-agentchat==0.7.5",
+    # Azure OpenAI model client, Azure token provider
+    "autogen-ext[openai,azure]==0.7.5",
+    # DefaultAzureCredential for managed identity auth to Azure services
+    "azure-identity",
+    # Azure AI Search client for hybrid vector + keyword search
+    "azure-search-documents",
+    # Cosmos DB client for conversation persistence
+    "azure-cosmos>=4.14",
+    # Entra ID OBO flow — exchange user token for Graph API token
+    "msal>=1.34",
+    # HTTP server framework for agent API
+    "fastapi",
+    # ASGI server to run FastAPI
+    "uvicorn[standard]",
+    # Data models (also a FastAPI dependency)
+    "pydantic>=2",
+    # Settings management (BaseSettings)
+    "pydantic-settings>=2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "ruff",
+    "pyright",
+    "httpx",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.pyright]
+include = ["src"]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+reportUnknownParameterType = false
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]

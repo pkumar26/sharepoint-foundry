@@ -19,12 +19,12 @@
 
 **Purpose**: Project initialization, dependency management, and basic structure
 
-- [ ] T001 Create project directory structure per plan.md (`src/agents/`, `src/models/`, `src/services/`, `tests/unit/`, `tests/integration/`, `tests/contract/`, `tests/fixtures/`)
-- [ ] T002 Create pyproject.toml with all dependencies (`autogen-agentchat==0.7.5`, `autogen-ext[openai,azure]==0.7.5`, `azure-identity`, `azure-search-documents`, `azure-cosmos`, `msal`, `fastapi`, `uvicorn`, `pydantic`) and dev dependencies (`pytest`, `pytest-asyncio`, `pytest-cov`, `ruff`, `pyright`, `httpx`)
-- [ ] T003 [P] Create .env.example with all required environment variables per quickstart.md
-- [ ] T004 [P] Configure ruff.toml (linting + formatting rules) and pyproject.toml pyright settings (strict mode)
-- [ ] T005 [P] Create Dockerfile per research.md (Python 3.11, uvicorn entrypoint, port 8000)
-- [ ] T006 [P] Create `src/__init__.py`, `src/agents/__init__.py`, `src/models/__init__.py`, `src/services/__init__.py`, `tests/__init__.py` package init files
+- [x] T001 Create project directory structure per plan.md (`src/agents/`, `src/models/`, `src/services/`, `tests/unit/`, `tests/integration/`, `tests/contract/`, `tests/fixtures/`)
+- [x] T002 Create pyproject.toml with all dependencies (`autogen-agentchat==0.7.5`, `autogen-ext[openai,azure]==0.7.5`, `azure-identity`, `azure-search-documents`, `azure-cosmos`, `msal`, `fastapi`, `uvicorn`, `pydantic`) and dev dependencies (`pytest`, `pytest-asyncio`, `pytest-cov`, `ruff`, `pyright`, `httpx`)
+- [x] T003 [P] Create .env.example with all required environment variables per quickstart.md
+- [x] T004 [P] Configure ruff.toml (linting + formatting rules) and pyproject.toml pyright settings (strict mode)
+- [x] T005 [P] Create Dockerfile per research.md (Python 3.11, uvicorn entrypoint, port 8000)
+- [x] T006 [P] Create `src/__init__.py`, `src/agents/__init__.py`, `src/models/__init__.py`, `src/services/__init__.py`, `tests/__init__.py` package init files
 
 ---
 
@@ -34,16 +34,16 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T007 Implement environment-based configuration loader in `src/config.py` — load all env vars from quickstart.md (Azure OpenAI, AI Search, Cosmos DB, Entra ID, app settings) with validation using pydantic `BaseSettings`
-- [ ] T008 [P] Implement structured JSON logging setup in `src/logging_config.py` — configure Python `logging` with JSON formatter, log levels from config (FR-015)
-- [ ] T009 [P] Create User model in `src/models/user.py` — Pydantic model with `user_id`, `display_name`, `email`, `tenant_id` fields per data-model.md; class method to construct from JWT claims (`oid`, `name`, `preferred_username`, `tid`)
-- [ ] T010 [P] Create SourceReference model in `src/models/document.py` — Pydantic model with `document_title`, `document_url`, `site_name`, `excerpt`, `relevance_score` per data-model.md
-- [ ] T011 [P] Create SearchResult model in `src/models/document.py` — Pydantic model with `chunk_id`, `document_title`, `content`, `source_url`, `site_name`, `file_type`, `last_modified`, `relevance_score` per data-model.md
-- [ ] T012 [P] Create ErrorResponse model in `src/models/errors.py` — Pydantic model matching `ErrorResponse` schema from openapi.yaml (error code enum + message)
-- [ ] T013 Create FastAPI application skeleton in `src/main.py` — app factory with lifespan handler, CORS middleware, health endpoint (`GET /health` returning `HealthResponse`), structured logging integration
-- [ ] T014 Create AuditEntry model and audit service in `src/services/audit.py` — Pydantic model per data-model.md; async `log_query()` function that writes structured JSON audit log entries (FR-016); include unit test in `tests/unit/test_audit.py`
-- [ ] T015 Unit test for config loader in `tests/unit/test_config.py`
-- [ ] T016 [P] Unit test for User model JWT parsing in `tests/unit/test_user_model.py`
+- [x] T007 Implement environment-based configuration loader in `src/config.py` — load all env vars from quickstart.md (Azure OpenAI, AI Search, Cosmos DB, Entra ID, app settings) with validation using pydantic `BaseSettings`
+- [x] T008 [P] Implement structured JSON logging setup in `src/logging_config.py` — configure Python `logging` with JSON formatter, log levels from config (FR-015)
+- [x] T009 [P] Create User model in `src/models/user.py` — Pydantic model with `user_id`, `display_name`, `email`, `tenant_id` fields per data-model.md; class method to construct from JWT claims (`oid`, `name`, `preferred_username`, `tid`)
+- [x] T010 [P] Create SourceReference model in `src/models/document.py` — Pydantic model with `document_title`, `document_url`, `site_name`, `excerpt`, `relevance_score` per data-model.md
+- [x] T011 [P] Create SearchResult model in `src/models/document.py` — Pydantic model with `chunk_id`, `document_title`, `content`, `source_url`, `site_name`, `file_type`, `last_modified`, `relevance_score` per data-model.md
+- [x] T012 [P] Create ErrorResponse model in `src/models/errors.py` — Pydantic model matching `ErrorResponse` schema from openapi.yaml (error code enum + message)
+- [x] T013 Create FastAPI application skeleton in `src/main.py` — app factory with lifespan handler, CORS middleware, health endpoint (`GET /health` returning `HealthResponse`), structured logging integration
+- [x] T014 Create AuditEntry model and audit service in `src/services/audit.py` — Pydantic model per data-model.md; async `log_query()` function that writes structured JSON audit log entries (FR-016); include unit test in `tests/unit/test_audit.py`
+- [x] T015 Unit test for config loader in `tests/unit/test_config.py`
+- [x] T016 [P] Unit test for User model JWT parsing in `tests/unit/test_user_model.py`
 
 **Checkpoint**: Foundation ready — config, logging, base models, FastAPI skeleton, audit. User story implementation can now begin.
 
@@ -57,17 +57,17 @@
 
 ### Tests for User Story 1
 
-- [ ] T017 [P] [US1] Contract test for `POST /chat` in `tests/contract/test_chat_api.py` — verify request/response shapes match openapi.yaml `ChatRequest`/`ChatResponse` schemas, 200/400/503 status codes
-- [ ] T018 [P] [US1] Unit test for search service in `tests/unit/test_search.py` — mock `SearchClient`, verify hybrid query construction (vector + keyword + semantic), verify security trimming filter applied, verify `SearchResult` mapping
-- [ ] T019 [P] [US1] Integration test for Q&A flow in `tests/integration/test_qa_flow.py` — end-to-end test: question → search → agent → grounded answer with citations; out-of-scope question → refusal
+- [x] T017 [P] [US1] Contract test for `POST /chat` in `tests/contract/test_chat_api.py` — verify request/response shapes match openapi.yaml `ChatRequest`/`ChatResponse` schemas, 200/400/503 status codes
+- [x] T018 [P] [US1] Unit test for search service in `tests/unit/test_search.py` — mock `SearchClient`, verify hybrid query construction (vector + keyword + semantic), verify security trimming filter applied, verify `SearchResult` mapping
+- [x] T019 [P] [US1] Integration test for Q&A flow in `tests/integration/test_qa_flow.py` — end-to-end test: question → search → agent → grounded answer with citations; out-of-scope question → refusal
 
 ### Implementation for User Story 1
 
-- [ ] T020 [US1] Implement Azure AI Search service in `src/services/search.py` — `SearchService` class with `search_documents(query, user_id, group_ids)` method; hybrid search (vector HNSW + BM25 + semantic ranking via `VectorizedQuery`); ACL security trimming with `UserIds`/`GroupIds` filter; return `list[SearchResult]`; authenticate with `DefaultAzureCredential`
-- [ ] T021 [US1] Implement SharePoint Q&A agent in `src/agents/sharepoint_qa.py` — `AssistantAgent` from `autogen_agentchat` with system prompt enforcing document-grounded answers only (FR-003, FR-009); register `search_documents` as `FunctionTool`; use `AzureOpenAIChatCompletionClient` with `AzureTokenProvider`; format responses with source citations (FR-004)
-- [ ] T022 [US1] Implement `POST /chat` endpoint in `src/main.py` — accept `ChatRequest`, validate input length ≤4,000 chars (FR-012), invoke agent, return `ChatResponse` with `AgentMessage` + `SourceReference` list; handle `400`/`503` errors per openapi.yaml
-- [ ] T023 [US1] Add input validation and error handling for chat endpoint in `src/main.py` — reject inputs exceeding max length with `input_too_long` error, handle SharePoint unavailability with `service_unavailable` error and retry logic (FR-012, FR-014)
-- [ ] T024 [US1] Integrate audit logging into chat flow in `src/main.py` — call `audit.log_query()` after each agent response with user_id, conversation_id, documents_accessed, response_summary, latency_ms, was_refused (FR-016)
+- [x] T020 [US1] Implement Azure AI Search service in `src/services/search.py` — `SearchService` class with `search_documents(query, user_id, group_ids)` method; hybrid search (vector HNSW + BM25 + semantic ranking via `VectorizedQuery`); ACL security trimming with `UserIds`/`GroupIds` filter; return `list[SearchResult]`; authenticate with `DefaultAzureCredential`
+- [x] T021 [US1] Implement SharePoint Q&A agent in `src/agents/sharepoint_qa.py` — `AssistantAgent` from `autogen_agentchat` with system prompt enforcing document-grounded answers only (FR-003, FR-009); register `search_documents` as `FunctionTool`; use `AzureOpenAIChatCompletionClient` with `AzureTokenProvider`; format responses with source citations (FR-004)
+- [x] T022 [US1] Implement `POST /chat` endpoint in `src/main.py` — accept `ChatRequest`, validate input length ≤4,000 chars (FR-012), invoke agent, return `ChatResponse` with `AgentMessage` + `SourceReference` list; handle `400`/`503` errors per openapi.yaml
+- [x] T023 [US1] Add input validation and error handling for chat endpoint in `src/main.py` — reject inputs exceeding max length with `input_too_long` error, handle SharePoint unavailability with `service_unavailable` error and retry logic (FR-012, FR-014)
+- [x] T024 [US1] Integrate audit logging into chat flow in `src/main.py` — call `audit.log_query()` after each agent response with user_id, conversation_id, documents_accessed, response_summary, latency_ms, was_refused (FR-016)
 
 **Checkpoint**: User Story 1 complete — agent answers grounded questions with citations, refuses out-of-scope, validates input, logs audit trail. Testable independently with stubbed auth.
 
@@ -81,15 +81,15 @@
 
 ### Tests for User Story 2
 
-- [ ] T025 [P] [US2] Unit test for auth service in `tests/unit/test_auth.py` — mock MSAL `ConfidentialClientApplication`, verify OBO token exchange, verify JWT claim extraction, verify expired token detection
-- [ ] T026 [P] [US2] Integration test for auth flow in `tests/integration/test_auth_flow.py` — unauthenticated request → 401; valid token → 200; expired token → 401 with `token_expired` error; insufficient permissions → documents filtered from results
+- [x] T025 [P] [US2] Unit test for auth service in `tests/unit/test_auth.py` — mock MSAL `ConfidentialClientApplication`, verify OBO token exchange, verify JWT claim extraction, verify expired token detection
+- [x] T026 [P] [US2] Integration test for auth flow in `tests/integration/test_auth_flow.py` — unauthenticated request → 401; valid token → 200; expired token → 401 with `token_expired` error; insufficient permissions → documents filtered from results
 
 ### Implementation for User Story 2
 
-- [ ] T027 [US2] Implement Entra ID auth service in `src/services/auth.py` — `AuthService` class with: (1) `validate_token(authorization_header)` to verify JWT signature, `aud`, `iss`, `exp` claims; (2) `get_graph_token(user_assertion)` using MSAL `ConfidentialClientApplication.acquire_token_on_behalf_of()` with scopes `Sites.Read.All`, `Files.Read.All`; (3) `extract_user(token)` returning `User` model from JWT claims; (4) `SerializableTokenCache` partitioned per user
-- [ ] T028 [US2] Create FastAPI auth dependency in `src/main.py` — `get_current_user()` dependency that extracts Bearer token, calls `auth.validate_token()`, returns `User`; raise `HTTPException(401)` with `unauthorized` or `token_expired` error codes (FR-001, FR-013)
-- [ ] T029 [US2] Wire auth dependency into all protected endpoints in `src/main.py` — add `current_user: User = Depends(get_current_user)` to `/chat`, `/conversations`, `/conversations/{id}` (FR-001)
-- [ ] T030 [US2] Pass user permissions to search service in `src/main.py` — extract user_id and group_ids from Graph token, pass to `search_documents()` for ACL security trimming (FR-008)
+- [x] T027 [US2] Implement Entra ID auth service in `src/services/auth.py` — `AuthService` class with: (1) `validate_token(authorization_header)` to verify JWT signature, `aud`, `iss`, `exp` claims; (2) `get_graph_token(user_assertion)` using MSAL `ConfidentialClientApplication.acquire_token_on_behalf_of()` with scopes `Sites.Read.All`, `Files.Read.All`; (3) `extract_user(token)` returning `User` model from JWT claims; (4) `SerializableTokenCache` partitioned per user
+- [x] T028 [US2] Create FastAPI auth dependency in `src/main.py` — `get_current_user()` dependency that extracts Bearer token, calls `auth.validate_token()`, returns `User`; raise `HTTPException(401)` with `unauthorized` or `token_expired` error codes (FR-001, FR-013)
+- [x] T029 [US2] Wire auth dependency into all protected endpoints in `src/main.py` — add `current_user: User = Depends(get_current_user)` to `/chat`, `/conversations`, `/conversations/{id}` (FR-001)
+- [x] T030 [US2] Pass user permissions to search service in `src/main.py` — extract user_id and group_ids from Graph token, pass to `search_documents()` for ACL security trimming (FR-008)
 
 **Checkpoint**: User Story 2 complete — all endpoints require Entra auth, OBO flow exchanges user token for Graph token, document-level permissions enforced via security trimming. Testable independently.
 
@@ -103,18 +103,18 @@
 
 ### Tests for User Story 3
 
-- [ ] T031 [P] [US3] Unit test for conversation service in `tests/unit/test_conversation.py` — mock Cosmos DB client, verify create/get/update/list operations, verify TTL reset on upsert, verify partition key scoping by user_id
-- [ ] T032 [P] [US3] Contract test for `GET /conversations` and `GET /conversations/{id}` in `tests/contract/test_conversations_api.py` — verify response shapes match openapi.yaml `ConversationListResponse`/`ConversationDetail` schemas, pagination params, 401/404 status codes
-- [ ] T033 [P] [US3] Integration test for conversation persistence in `tests/integration/test_conversation_persistence.py` — multi-turn conversation → close → resume → verify agent resolves references to prior context; verify conversation isolation (no context bleed)
+- [x] T031 [P] [US3] Unit test for conversation service in `tests/unit/test_conversation.py` — mock Cosmos DB client, verify create/get/update/list operations, verify TTL reset on upsert, verify partition key scoping by user_id
+- [x] T032 [P] [US3] Contract test for `GET /conversations` and `GET /conversations/{id}` in `tests/contract/test_conversations_api.py` — verify response shapes match openapi.yaml `ConversationListResponse`/`ConversationDetail` schemas, pagination params, 401/404 status codes
+- [x] T033 [P] [US3] Integration test for conversation persistence in `tests/integration/test_conversation_persistence.py` — multi-turn conversation → close → resume → verify agent resolves references to prior context; verify conversation isolation (no context bleed)
 
 ### Implementation for User Story 3
 
-- [ ] T034 [US3] Create Conversation and Message models in `src/models/conversation.py` — Pydantic models per data-model.md: `Conversation` (id, user_id, title, messages, status, created_at, last_active_at, ttl), `Message` (id, role, content, source_references, timestamp); methods for Cosmos DB serialization/deserialization
-- [ ] T035 [US3] Implement conversation persistence service in `src/services/conversation.py` — `ConversationService` class with Cosmos DB client (`DefaultAzureCredential`); methods: `create_conversation()`, `get_conversation(id, user_id)`, `add_message(conversation_id, message)` with TTL reset via upsert, `list_conversations(user_id, status, limit, offset)` with partition-scoped queries; auto-create database/container on init (FR-005, FR-006)
-- [ ] T036 [US3] Integrate conversation context into agent in `src/agents/sharepoint_qa.py` — load agent state via `load_state()` from stored conversation; use `BufferedChatCompletionContext` for sliding-window history; save state via `save_state()` after each response (FR-007)
-- [ ] T037 [US3] Update `POST /chat` to handle `conversation_id` in `src/main.py` — if `conversation_id` provided, load existing conversation and agent state; if omitted, create new conversation; append user message + agent response; save conversation after agent responds
-- [ ] T038 [US3] Implement `GET /conversations` endpoint in `src/main.py` — query user's conversations from Cosmos DB via `ConversationService.list_conversations()`, support `status`, `limit`, `offset` query params, return `ConversationListResponse` per openapi.yaml
-- [ ] T039 [US3] Implement `GET /conversations/{conversation_id}` endpoint in `src/main.py` — load full conversation with messages from Cosmos DB, verify ownership (user_id matches), return `ConversationDetail` or 404 per openapi.yaml
+- [x] T034 [US3] Create Conversation and Message models in `src/models/conversation.py` — Pydantic models per data-model.md: `Conversation` (id, user_id, title, messages, status, created_at, last_active_at, ttl), `Message` (id, role, content, source_references, timestamp); methods for Cosmos DB serialization/deserialization
+- [x] T035 [US3] Implement conversation persistence service in `src/services/conversation.py` — `ConversationService` class with Cosmos DB client (`DefaultAzureCredential`); methods: `create_conversation()`, `get_conversation(id, user_id)`, `add_message(conversation_id, message)` with TTL reset via upsert, `list_conversations(user_id, status, limit, offset)` with partition-scoped queries; auto-create database/container on init (FR-005, FR-006)
+- [x] T036 [US3] Integrate conversation context into agent in `src/agents/sharepoint_qa.py` — load agent state via `load_state()` from stored conversation; use `BufferedChatCompletionContext` for sliding-window history; save state via `save_state()` after each response (FR-007)
+- [x] T037 [US3] Update `POST /chat` to handle `conversation_id` in `src/main.py` — if `conversation_id` provided, load existing conversation and agent state; if omitted, create new conversation; append user message + agent response; save conversation after agent responds
+- [x] T038 [US3] Implement `GET /conversations` endpoint in `src/main.py` — query user's conversations from Cosmos DB via `ConversationService.list_conversations()`, support `status`, `limit`, `offset` query params, return `ConversationListResponse` per openapi.yaml
+- [x] T039 [US3] Implement `GET /conversations/{conversation_id}` endpoint in `src/main.py` — load full conversation with messages from Cosmos DB, verify ownership (user_id matches), return `ConversationDetail` or 404 per openapi.yaml
 
 **Checkpoint**: User Story 3 complete — conversations persisted in Cosmos DB, follow-up questions use prior context, conversation isolation enforced, conversation listing with pagination. Testable independently.
 
@@ -128,15 +128,15 @@
 
 ### Tests for User Story 4
 
-- [ ] T040 [P] [US4] Unit test for rate limiter in `tests/unit/test_rate_limiter.py` — verify 20 queries/minute window, verify sliding window reset, verify per-user isolation, verify concurrent access safety with asyncio
-- [ ] T041 [P] [US4] Integration test for rate limiting in `tests/integration/test_rate_limiting.py` — send 21 requests in 1 minute → verify 21st returns 429 with `rate_limit_exceeded` error; verify different users have independent limits
+- [x] T040 [P] [US4] Unit test for rate limiter in `tests/unit/test_rate_limiter.py` — verify 20 queries/minute window, verify sliding window reset, verify per-user isolation, verify concurrent access safety with asyncio
+- [x] T041 [P] [US4] Integration test for rate limiting in `tests/integration/test_rate_limiting.py` — send 21 requests in 1 minute → verify 21st returns 429 with `rate_limit_exceeded` error; verify different users have independent limits
 
 ### Implementation for User Story 4
 
-- [ ] T042 [US4] Implement per-user rate limiter in `src/services/rate_limiter.py` — `RateLimiter` class with sliding-window algorithm using `asyncio.Lock` + `collections.deque` of timestamps per user_id; `check_rate_limit(user_id)` returns remaining count or raises; configurable limit from config (FR-017)
-- [ ] T043 [US4] Integrate rate limiter into chat endpoint in `src/main.py` — call `rate_limiter.check_rate_limit(user_id)` before agent invocation; return 429 with `rate_limit_exceeded` error and helpful message when exceeded; do NOT discard conversation context on rate limit (FR-017)
-- [ ] T044 [US4] Add response timing and performance logging in `src/main.py` — measure end-to-end latency per request, log to structured JSON logs, include `latency_ms` in audit entry; log warning if response exceeds 5s threshold
-- [ ] T044b [US4] Integration test for concurrent user isolation in `tests/integration/test_concurrent_users.py` — send 10 parallel requests with different user tokens, verify no identity or conversation cross-contamination (FR-010)
+- [x] T042 [US4] Implement per-user rate limiter in `src/services/rate_limiter.py` — `RateLimiter` class with sliding-window algorithm using `asyncio.Lock` + `collections.deque` of timestamps per user_id; `check_rate_limit(user_id)` returns remaining count or raises; configurable limit from config (FR-017)
+- [x] T043 [US4] Integrate rate limiter into chat endpoint in `src/main.py` — call `rate_limiter.check_rate_limit(user_id)` before agent invocation; return 429 with `rate_limit_exceeded` error and helpful message when exceeded; do NOT discard conversation context on rate limit (FR-017)
+- [x] T044 [US4] Add response timing and performance logging in `src/main.py` — measure end-to-end latency per request, log to structured JSON logs, include `latency_ms` in audit entry; log warning if response exceeds 5s threshold
+- [x] T044b [US4] Integration test for concurrent user isolation in `tests/integration/test_concurrent_users.py` — send 10 parallel requests with different user tokens, verify no identity or conversation cross-contamination (FR-010)
 
 **Checkpoint**: User Story 4 complete — rate limiting enforced at 20 queries/min/user, response timing measured and logged, performance targets achievable. Testable independently.
 
@@ -146,12 +146,12 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T045 [P] Create SharePoint mock fixtures in `tests/fixtures/sharepoint_responses.json` — realistic Graph API and AI Search response payloads for test reuse
-- [ ] T046 [P] Create sample test documents in `tests/fixtures/sample_documents/` — small DOCX, PDF, and TXT files for integration test scenarios
-- [ ] T047 [P] Add `__all__` exports and module docstrings to all `__init__.py` files in `src/`
-- [ ] T048 Run full lint and type check pass — `ruff check src/ tests/` + `ruff format --check src/ tests/` + `pyright src/` — fix all issues
-- [ ] T049 Run full test suite — `pytest --cov=src --cov-report=term-missing` — verify ≥80% line coverage per module
-- [ ] T050 Validate quickstart.md — follow the quickstart steps end-to-end (install, configure, run, test) and verify they complete successfully
+- [x] T045 [P] Create SharePoint mock fixtures in `tests/fixtures/sharepoint_responses.json` — realistic Graph API and AI Search response payloads for test reuse
+- [x] T046 [P] Create sample test documents in `tests/fixtures/sample_documents/` — small DOCX, PDF, and TXT files for integration test scenarios
+- [x] T047 [P] Add `__all__` exports and module docstrings to all `__init__.py` files in `src/`
+- [x] T048 Run full lint and type check pass — `ruff check src/ tests/` + `ruff format --check src/ tests/` + `pyright src/` — fix all issues
+- [x] T049 Run full test suite — `pytest --cov=src --cov-report=term-missing` — verify ≥80% line coverage per module
+- [x] T050 Validate quickstart.md — follow the quickstart steps end-to-end (install, configure, run, test) and verify they complete successfully
 
 ---
 
