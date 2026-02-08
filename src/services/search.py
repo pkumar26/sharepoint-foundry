@@ -103,8 +103,7 @@ class SearchService:
                         chunk_id=result["id"],
                         document_title=result["title"],
                         content=result["content"],
-                        source_url=result["source_url"],
-                        site_name=result["site_name"],
+                        source_url=result.get("source_url", ""),
                         file_type=result.get("file_type", "unknown"),
                         last_modified=last_modified,
                         relevance_score=result.get("@search.score", 0.0),
@@ -142,6 +141,6 @@ class SearchService:
         """
         response = await self._embedding_client.embeddings.create(
             input=text,
-            model="text-embedding-3-small",
+            model="text-embedding-ada-002",
         )
         return response.data[0].embedding

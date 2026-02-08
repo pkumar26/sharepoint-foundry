@@ -1,0 +1,31 @@
+{
+    "chat.promptFilesRecommendations": {
+        "speckit.constitution": true,
+        "speckit.specify": true,
+        "speckit.plan": true,
+        "speckit.tasks": true,
+        "speckit.implement": true
+    },
+    "chat.tools.terminal.autoApprove": {
+        ".specify/scripts/bash/": true,
+        ".specify/scripts/powershell/": true
+    },
+    "rest-client.environmentVariables": {
+        "$shared": {},
+        "dev": {
+            "searchUrl": "https://<your-search-service>.search.windows.net",
+            "apiKey": "<your-search-admin-key>",
+            "apiVersion": "2025-11-01-preview",
+            "aoaiEndpoint": "https://<your-openai-resource>.openai.azure.com",
+            "aoaiDeploymentName": "text-embedding-ada-002",
+            "aoaiModelName": "text-embedding-ada-002",
+            "spoEndpoint": "https://<tenant>.sharepoint.com/sites/<site>",
+            "spoAppId": "<entra-app-client-id>",
+            "spoAppSecret": "<entra-app-client-secret>",
+            "spoTenantId": "<entra-tenant-id>"
+        }
+    },
+    "files.associations": {
+        "*.rest": "http"
+    }
+}
