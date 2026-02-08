@@ -43,3 +43,4 @@ htmlcov/
 
 # Ruff
 .ruff_cache/
+.rest
