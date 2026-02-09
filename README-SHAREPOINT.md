@@ -277,6 +277,56 @@ api-key: {{apiKey}}
 
 ---
 
+## Cross-Tenant Setup (Search & SharePoint in Different Tenants)
+
+If your Azure AI Search service and SharePoint site live in **different Microsoft Entra tenants**, the indexer still works but requires specific configuration changes.
+
+> **Reference**: [Index data from SharePoint document libraries — Step 1](https://learn.microsoft.com/en-us/azure/search/search-howto-index-sharepoint-online#step-1-optional-enable-system-assigned-managed-identity) and [Connection string format](https://learn.microsoft.com/en-us/azure/search/search-howto-index-sharepoint-online#connection-string-format)
+
+### What changes
+
+| Item | Same tenant | Cross-tenant |
+|------|------------|--------------|
+| **`TenantId` in connection string** | Optional (auto-detected via managed identity) | **Required** — must be the SharePoint tenant's ID |
+| **System-assigned managed identity** | Used for tenant detection | **Skip** — managed identity cannot detect a foreign tenant |
+| **Secretless auth (federated credentials)** | Supported | **Not supported** — must use a client secret |
+| **App registration tenant** | Same tenant as Search service | Must be registered (or consented) **in the SharePoint tenant** |
+
+### Step-by-step differences
+
+1. **Skip managed identity for tenant detection** (Step 1 in the setup guide)
+   - The system-assigned managed identity is only used to auto-detect the tenant where the search service is provisioned. It cannot discover a foreign tenant.
+   - You still need managed identity enabled if using it for Azure OpenAI RBAC — that part is unaffected.
+
+2. **Include `TenantId` in the connection string** (Step 4)
+   ```
+   SharePointOnlineEndpoint=https://contoso.sharepoint.com/sites/MySite;ApplicationId=<app-id>;ApplicationSecret=<secret>;TenantId=<sharepoint-tenant-id>
+   ```
+   The `TenantId` value must be the **SharePoint site's tenant**, not the search service's tenant.
+
+3. **Use client secret authentication**
+   - Secretless auth (federated credentials with managed identity) does not work cross-tenant.
+   - You must configure a client secret on the Entra app registration.
+
+4. **App registration & consent in the SharePoint tenant**
+   - The Entra app needs Microsoft Graph permissions (`Files.Read.All`, `Sites.FullControl.All`) to read SharePoint content.
+   - These permissions must be **consented in the tenant that owns the SharePoint site**.
+   - Two approaches:
+     - **Option A**: Register the app directly in the SharePoint tenant and reference it from the connection string.
+     - **Option B**: Make the app registration **multi-tenant** (change from "Single tenant" to "Accounts in any organizational directory") and have a tenant admin in the SharePoint tenant grant admin consent.
+
+5. **Update `spoTenantId`** in your `.vscode/settings.json` to the SharePoint tenant ID (not the search service tenant).
+
+### Quick checklist
+
+- [ ] `TenantId` included in connection string → set to SharePoint's tenant ID
+- [ ] Client secret configured (not secretless)
+- [ ] App registration has Graph permissions consented **in the SharePoint tenant**
+- [ ] Tenant admin in the SharePoint tenant has granted admin consent
+- [ ] Managed identity step skipped for tenant detection (still enabled for Azure OpenAI RBAC if needed)
+
+---
+
 ## Architecture
 
 ```
