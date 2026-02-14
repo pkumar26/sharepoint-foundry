@@ -8,10 +8,13 @@ import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from src.config import Settings, get_settings
@@ -38,6 +41,9 @@ class ChatRequest(BaseModel):
 
     message: str = Field(..., description="User's question text")
     conversation_id: str | None = Field(None, description="Existing conversation ID to continue")
+    search_approach: Literal["indexer", "foundryiq", "indexed_sharepoint"] | None = Field(
+        None, description="Override the server-default search approach for this request"
+    )
 
 
 class AgentMessage(BaseModel):
@@ -153,14 +159,41 @@ def create_app() -> FastAPI:
     )
     application.state.rate_limiter = rate_limiter
 
-    @application.get("/")
-    async def root() -> dict:
-        """Root endpoint with API info."""
+    # ── Static frontend ─────────────────────────────────────────────────────
+    static_dir = Path(__file__).resolve().parent.parent / "static"
+    if static_dir.is_dir():
+        application.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+    @application.get("/", response_model=None)
+    async def root():
+        """Serve the web chat UI (or fallback API info if static/ absent)."""
+        index = static_dir / "index.html"
+        if index.is_file():
+            return FileResponse(str(index))
         return {
             "name": "SharePoint Document Q&A Agent",
             "version": "0.1.0",
             "docs": "/docs",
             "health": "/health",
+        }
+
+    @application.get("/approaches")
+    async def get_approaches(request: Request) -> dict:
+        """Return available search approaches and the server default."""
+        settings: Settings = request.app.state.settings
+        return {
+            "approaches": ["indexer", "foundryiq", "indexed_sharepoint"],
+            "default": settings.search_approach,
+        }
+
+    @application.get("/auth/config")
+    async def get_auth_config(request: Request) -> dict:
+        """Return public (non-secret) auth configuration for the SPA."""
+        settings: Settings = request.app.state.settings
+        return {
+            "client_id": settings.entra_client_id,
+            "tenant_id": settings.entra_tenant_id,
+            "scopes": [f"api://{settings.entra_client_id}/access_as_user"],
         }
 
     @application.get("/health", response_model=HealthResponse)
@@ -233,16 +266,39 @@ def create_app() -> FastAPI:
 
             # ── Search backend factory ──────────────────────────────────
             search_service: SearchBackend
+            effective_approach = body.search_approach or settings.search_approach
 
-            if settings.search_approach == "indexer":
+            if effective_approach == "indexer":
                 # Approach 1: direct Azure AI Search index query
-                # Use API key when available, otherwise DefaultAzureCredential
-                if settings.azure_search_api_key:
-                    from azure.core.credentials import AzureKeyCredential
+                # Use OBO token when user is authenticated, fall back to API key / DefaultAzureCredential
+                from src.services.auth import AuthService
 
-                    search_cred: Any = AzureKeyCredential(settings.azure_search_api_key)
-                else:
-                    search_cred = credential
+                auth_service = AuthService(settings)
+                auth_header_val = request.headers.get("Authorization", "")
+                user_token = auth_header_val.removeprefix("Bearer ").strip()
+
+                try:
+                    obo_token = await auth_service.get_search_token(user_token)
+                    from azure.core.credentials import AccessToken, AzureKeyCredential  # noqa: F811
+
+                    class _OBOTokenCredential:
+                        """Wraps an OBO access token as an Azure TokenCredential."""
+
+                        def __init__(self, token: str) -> None:
+                            self._token = token
+
+                        def get_token(self, *scopes: str, **kwargs: Any) -> AccessToken:
+                            return AccessToken(self._token, 0)
+
+                    search_cred: Any = _OBOTokenCredential(obo_token)
+                except Exception:
+                    logger.warning("OBO token exchange failed for indexer, falling back to API key")
+                    if settings.azure_search_api_key:
+                        from azure.core.credentials import AzureKeyCredential
+
+                        search_cred = AzureKeyCredential(settings.azure_search_api_key)
+                    else:
+                        search_cred = credential
 
                 search_service = IndexerSearchService(
                     endpoint=settings.azure_search_endpoint,
@@ -254,8 +310,8 @@ def create_app() -> FastAPI:
                 from src.services.kb_search import KnowledgeBaseSearchService
 
                 token_provider = None
-                if settings.search_approach == "foundryiq":
-                    # OBO token provider for FoundryIQ (delegated user identity)
+                if effective_approach in ("foundryiq", "indexed_sharepoint"):
+                    # OBO token provider for delegated user identity
                     from src.services.auth import AuthService
 
                     auth_service = AuthService(settings)
@@ -272,7 +328,7 @@ def create_app() -> FastAPI:
                     api_version=settings.azure_search_api_version,
                     knowledge_base_name=settings.knowledge_base_name,
                     knowledge_source_name=settings.knowledge_source_name,
-                    approach=settings.search_approach,
+                    approach=effective_approach,
                     api_key=settings.azure_search_api_key,
                     token_provider=token_provider,
                 )

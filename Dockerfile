@@ -32,6 +32,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy application code
 COPY --chown=appuser:appuser src/ ./src/
+COPY --chown=appuser:appuser static/ ./static/
 
 # Switch to non-root user
 USER appuser
