@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
 
 from azure.search.documents import SearchClient
 from azure.search.documents.models import VectorizedQuery
@@ -14,11 +14,29 @@ from src.models.document import SearchResult
 logger = logging.getLogger(__name__)
 
 
-class SearchService:
+@runtime_checkable
+class SearchBackend(Protocol):
+    """Protocol defining the contract for any search backend.
+
+    All search implementations (indexer, foundryiq, indexed_sharepoint)
+    must satisfy this interface so they can be used interchangeably.
+    """
+
+    async def search_documents(
+        self,
+        query: str,
+        user_id: str,
+        group_ids: list[str],
+        top: int = 5,
+    ) -> list[SearchResult]: ...
+
+
+class IndexerSearchService:
     """Search SharePoint documents using Azure AI Search hybrid queries.
 
     Combines vector (HNSW), keyword (BM25), and semantic ranking.
     Applies ACL-based security trimming using user and group IDs.
+    This is the Approach 1 (direct index query) backend.
     """
 
     def __init__(
@@ -144,3 +162,7 @@ class SearchService:
             model="text-embedding-ada-002",
         )
         return response.data[0].embedding
+
+
+# Backward-compatible alias
+SearchService = IndexerSearchService

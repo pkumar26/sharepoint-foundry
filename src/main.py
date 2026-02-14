@@ -153,6 +153,16 @@ def create_app() -> FastAPI:
     )
     application.state.rate_limiter = rate_limiter
 
+    @application.get("/")
+    async def root() -> dict:
+        """Root endpoint with API info."""
+        return {
+            "name": "SharePoint Document Q&A Agent",
+            "version": "0.1.0",
+            "docs": "/docs",
+            "health": "/health",
+        }
+
     @application.get("/health", response_model=HealthResponse)
     async def health_check() -> HealthResponse:
         """Health check endpoint used by Container Apps probes."""
@@ -217,22 +227,70 @@ def create_app() -> FastAPI:
             from azure.identity import DefaultAzureCredential
 
             from src.agents.sharepoint_qa import SharePointQAAgent
-            from src.services.search import SearchService
+            from src.services.search import IndexerSearchService, SearchBackend
 
             credential = DefaultAzureCredential()
 
-            search_service = SearchService(
-                endpoint=settings.azure_search_endpoint,
-                index_name=settings.azure_search_index_name,
-                credential=credential,
-            )
+            # ── Search backend factory ──────────────────────────────────
+            search_service: SearchBackend
+
+            if settings.search_approach == "indexer":
+                # Approach 1: direct Azure AI Search index query
+                # Use API key when available, otherwise DefaultAzureCredential
+                if settings.azure_search_api_key:
+                    from azure.core.credentials import AzureKeyCredential
+
+                    search_cred: Any = AzureKeyCredential(settings.azure_search_api_key)
+                else:
+                    search_cred = credential
+
+                search_service = IndexerSearchService(
+                    endpoint=settings.azure_search_endpoint,
+                    index_name=settings.azure_search_index_name,
+                    credential=search_cred,
+                )
+            else:
+                # Approaches 2 & 3: Knowledge Base retrieve API
+                from src.services.kb_search import KnowledgeBaseSearchService
+
+                token_provider = None
+                if settings.search_approach == "foundryiq":
+                    # OBO token provider for FoundryIQ (delegated user identity)
+                    from src.services.auth import AuthService
+
+                    auth_service = AuthService(settings)
+                    auth_header = request.headers.get("Authorization", "")
+                    user_token = auth_header.removeprefix("Bearer ").strip()
+
+                    async def _search_token_provider() -> str:
+                        return await auth_service.get_search_token(user_token)
+
+                    token_provider = _search_token_provider
+
+                search_service = KnowledgeBaseSearchService(
+                    endpoint=settings.azure_search_endpoint,
+                    api_version=settings.azure_search_api_version,
+                    knowledge_base_name=settings.knowledge_base_name,
+                    knowledge_source_name=settings.knowledge_source_name,
+                    approach=settings.search_approach,
+                    api_key=settings.azure_search_api_key,
+                    token_provider=token_provider,
+                )
 
             model_client = AzureOpenAIChatCompletionClient(
                 azure_deployment=settings.azure_openai_deployment,
                 azure_endpoint=settings.azure_openai_endpoint,
                 api_version=settings.azure_openai_api_version,
-                azure_ad_token_provider=lambda: (
-                    credential.get_token("https://cognitiveservices.azure.com/.default").token
+                **(
+                    {"api_key": settings.azure_openai_api_key}
+                    if settings.azure_openai_api_key
+                    else {
+                        "azure_ad_token_provider": lambda: (
+                            credential.get_token(
+                                "https://cognitiveservices.azure.com/.default"
+                            ).token
+                        )
+                    }
                 ),
                 model=settings.azure_openai_deployment,
             )

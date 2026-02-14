@@ -18,7 +18,7 @@ class SourceReference(BaseModel):
     document_url: str = Field(..., description="SharePoint URL to the document")
     excerpt: str | None = Field(None, max_length=500, description="Relevant snippet from document")
     relevance_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Search relevance score"
+        None, ge=0.0, description="Search relevance score (0-1 for keyword, may exceed 1 for reranker)"
     )
 
 

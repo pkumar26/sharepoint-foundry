@@ -1,0 +1,512 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "15357334488843802164"
+    }
+  },
+  "parameters": {
+    "environmentName": {
+      "type": "string",
+      "metadata": {
+        "description": "Environment name used as a prefix for all resources."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure region for all resources."
+      }
+    },
+    "imageTag": {
+      "type": "string",
+      "defaultValue": "latest",
+      "metadata": {
+        "description": "Container image tag. Defaults to latest."
+      }
+    },
+    "azureOpenaiEndpoint": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure OpenAI endpoint URL."
+      }
+    },
+    "azureOpenaiDeployment": {
+      "type": "string",
+      "defaultValue": "gpt-4o",
+      "metadata": {
+        "description": "Azure OpenAI chat deployment name."
+      }
+    },
+    "azureOpenaiEmbeddingDeployment": {
+      "type": "string",
+      "defaultValue": "text-embedding-3-small",
+      "metadata": {
+        "description": "Azure OpenAI embedding deployment name."
+      }
+    },
+    "azureOpenaiApiVersion": {
+      "type": "string",
+      "defaultValue": "2024-06-01",
+      "metadata": {
+        "description": "Azure OpenAI API version."
+      }
+    },
+    "azureSearchEndpoint": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AI Search endpoint URL."
+      }
+    },
+    "azureSearchIndexName": {
+      "type": "string",
+      "defaultValue": "sharepoint-docs-index",
+      "metadata": {
+        "description": "Azure AI Search index name."
+      }
+    },
+    "searchApproach": {
+      "type": "string",
+      "defaultValue": "indexer",
+      "metadata": {
+        "description": "Search approach: indexer | foundryiq | indexed_sharepoint."
+      }
+    },
+    "azureSearchApiKey": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Azure AI Search admin API key (for KB approaches or when RBAC is not available)."
+      }
+    },
+    "azureOpenaiApiKey": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Azure OpenAI API key (when RBAC is not available, e.g. cross-RG)."
+      }
+    },
+    "azureSearchApiVersion": {
+      "type": "string",
+      "defaultValue": "2025-11-01-preview",
+      "metadata": {
+        "description": "Azure AI Search API version for KB retrieve calls."
+      }
+    },
+    "knowledgeBaseName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Knowledge Base name (for foundryiq / indexed_sharepoint)."
+      }
+    },
+    "knowledgeSourceName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Knowledge Source name (for foundryiq / indexed_sharepoint)."
+      }
+    },
+    "cosmosEndpoint": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure Cosmos DB endpoint URL."
+      }
+    },
+    "cosmosDatabase": {
+      "type": "string",
+      "defaultValue": "sharepoint-agent",
+      "metadata": {
+        "description": "Cosmos DB database name."
+      }
+    },
+    "cosmosContainer": {
+      "type": "string",
+      "defaultValue": "conversations",
+      "metadata": {
+        "description": "Cosmos DB container name."
+      }
+    },
+    "entraTenantId": {
+      "type": "string",
+      "metadata": {
+        "description": "Microsoft Entra ID tenant ID."
+      }
+    },
+    "entraClientId": {
+      "type": "string",
+      "metadata": {
+        "description": "Microsoft Entra ID backend app client ID."
+      }
+    },
+    "logLevel": {
+      "type": "string",
+      "defaultValue": "INFO",
+      "metadata": {
+        "description": "Log level for the application."
+      }
+    },
+    "maxInputLength": {
+      "type": "string",
+      "defaultValue": "4000",
+      "metadata": {
+        "description": "Maximum input length for user messages."
+      }
+    },
+    "rateLimitPerMinute": {
+      "type": "string",
+      "defaultValue": "20",
+      "metadata": {
+        "description": "Rate limit per minute per user."
+      }
+    },
+    "azureOpenaiResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the Azure OpenAI account (for RBAC). Leave empty to skip."
+      }
+    },
+    "azureSearchResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the Azure AI Search service (for RBAC). Leave empty to skip."
+      }
+    },
+    "cosmosResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the Azure Cosmos DB account (for RBAC). Leave empty to skip."
+      }
+    }
+  },
+  "variables": {
+    "abbrs": {
+      "acr": "cr",
+      "law": "log",
+      "cae": "cae",
+      "ca": "ca"
+    },
+    "resourceToken": "[uniqueString(resourceGroup().id, parameters('environmentName'))]",
+    "acrName": "[format('{0}{1}{2}', variables('abbrs').acr, replace(parameters('environmentName'), '-', ''), variables('resourceToken'))]",
+    "lawName": "[format('{0}-{1}', variables('abbrs').law, parameters('environmentName'))]",
+    "caeName": "[format('{0}-{1}', variables('abbrs').cae, parameters('environmentName'))]",
+    "caName": "[format('{0}-{1}', variables('abbrs').ca, parameters('environmentName'))]",
+    "containerImageRef": "[format('mcr.microsoft.com/k8se/quickstart:{0}', parameters('imageTag'))]",
+    "cognitiveServicesOpenAIUserRoleId": "5e0bd9bd-7b93-4f28-af87-19fc36ad61bd",
+    "searchIndexDataReaderRoleId": "1407120a-92aa-4202-b7e9-c0e197c71c8f",
+    "cosmosDbDataContributorRoleId": "00000000-0000-0000-0000-000000000002"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ContainerRegistry/registries",
+      "apiVersion": "2023-07-01",
+      "name": "[variables('acrName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Basic"
+      },
+      "properties": {
+        "adminUserEnabled": true
+      },
+      "tags": {
+        "environment": "[parameters('environmentName')]",
+        "app": "sharepoint-agent"
+      }
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('lawName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "sku": {
+          "name": "PerGB2018"
+        },
+        "retentionInDays": 30
+      },
+      "tags": {
+        "environment": "[parameters('environmentName')]",
+        "app": "sharepoint-agent"
+      }
+    },
+    {
+      "type": "Microsoft.App/managedEnvironments",
+      "apiVersion": "2024-03-01",
+      "name": "[variables('caeName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "appLogsConfiguration": {
+          "destination": "log-analytics",
+          "logAnalyticsConfiguration": {
+            "customerId": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', variables('lawName')), '2023-09-01').customerId]",
+            "sharedKey": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', variables('lawName')), '2023-09-01').primarySharedKey]"
+          }
+        },
+        "zoneRedundant": false
+      },
+      "tags": {
+        "environment": "[parameters('environmentName')]",
+        "app": "sharepoint-agent"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('lawName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2024-03-01",
+      "name": "[variables('caName')]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', variables('caeName'))]",
+        "configuration": {
+          "registries": [
+            {
+              "server": "[reference(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), '2023-07-01').loginServer]",
+              "username": "[variables('acrName')]",
+              "passwordSecretRef": "acr-password"
+            }
+          ],
+          "secrets": [
+            {
+              "name": "acr-password",
+              "value": "[listCredentials(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), '2023-07-01').passwords[0].value]"
+            },
+            {
+              "name": "search-api-key",
+              "value": "[parameters('azureSearchApiKey')]"
+            },
+            {
+              "name": "openai-api-key",
+              "value": "[parameters('azureOpenaiApiKey')]"
+            }
+          ],
+          "ingress": {
+            "external": true,
+            "targetPort": 8000,
+            "allowInsecure": false,
+            "transport": "auto"
+          }
+        },
+        "template": {
+          "containers": [
+            {
+              "name": "sharepoint-agent",
+              "image": "[variables('containerImageRef')]",
+              "resources": {
+                "cpu": "[json('0.5')]",
+                "memory": "1Gi"
+              },
+              "env": [
+                {
+                  "name": "AZURE_OPENAI_ENDPOINT",
+                  "value": "[parameters('azureOpenaiEndpoint')]"
+                },
+                {
+                  "name": "AZURE_OPENAI_DEPLOYMENT",
+                  "value": "[parameters('azureOpenaiDeployment')]"
+                },
+                {
+                  "name": "AZURE_OPENAI_EMBEDDING_DEPLOYMENT",
+                  "value": "[parameters('azureOpenaiEmbeddingDeployment')]"
+                },
+                {
+                  "name": "AZURE_OPENAI_API_VERSION",
+                  "value": "[parameters('azureOpenaiApiVersion')]"
+                },
+                {
+                  "name": "AZURE_SEARCH_ENDPOINT",
+                  "value": "[parameters('azureSearchEndpoint')]"
+                },
+                {
+                  "name": "AZURE_SEARCH_INDEX_NAME",
+                  "value": "[parameters('azureSearchIndexName')]"
+                },
+                {
+                  "name": "SEARCH_APPROACH",
+                  "value": "[parameters('searchApproach')]"
+                },
+                {
+                  "name": "AZURE_SEARCH_API_KEY",
+                  "secretRef": "search-api-key"
+                },
+                {
+                  "name": "AZURE_OPENAI_API_KEY",
+                  "secretRef": "openai-api-key"
+                },
+                {
+                  "name": "AZURE_SEARCH_API_VERSION",
+                  "value": "[parameters('azureSearchApiVersion')]"
+                },
+                {
+                  "name": "KNOWLEDGE_BASE_NAME",
+                  "value": "[parameters('knowledgeBaseName')]"
+                },
+                {
+                  "name": "KNOWLEDGE_SOURCE_NAME",
+                  "value": "[parameters('knowledgeSourceName')]"
+                },
+                {
+                  "name": "COSMOS_ENDPOINT",
+                  "value": "[parameters('cosmosEndpoint')]"
+                },
+                {
+                  "name": "COSMOS_DATABASE",
+                  "value": "[parameters('cosmosDatabase')]"
+                },
+                {
+                  "name": "COSMOS_CONTAINER",
+                  "value": "[parameters('cosmosContainer')]"
+                },
+                {
+                  "name": "ENTRA_TENANT_ID",
+                  "value": "[parameters('entraTenantId')]"
+                },
+                {
+                  "name": "ENTRA_CLIENT_ID",
+                  "value": "[parameters('entraClientId')]"
+                },
+                {
+                  "name": "LOG_LEVEL",
+                  "value": "[parameters('logLevel')]"
+                },
+                {
+                  "name": "MAX_INPUT_LENGTH",
+                  "value": "[parameters('maxInputLength')]"
+                },
+                {
+                  "name": "RATE_LIMIT_PER_MINUTE",
+                  "value": "[parameters('rateLimitPerMinute')]"
+                }
+              ],
+              "probes": [
+                {
+                  "type": "Liveness",
+                  "httpGet": {
+                    "path": "/health",
+                    "port": 8000
+                  },
+                  "initialDelaySeconds": 30,
+                  "periodSeconds": 30
+                },
+                {
+                  "type": "Readiness",
+                  "httpGet": {
+                    "path": "/health",
+                    "port": 8000
+                  },
+                  "initialDelaySeconds": 15,
+                  "periodSeconds": 10
+                }
+              ]
+            }
+          ],
+          "scale": {
+            "minReplicas": 1,
+            "maxReplicas": 3,
+            "rules": [
+              {
+                "name": "http-scaling",
+                "http": {
+                  "metadata": {
+                    "concurrentRequests": "20"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "tags": {
+        "environment": "[parameters('environmentName')]",
+        "app": "sharepoint-agent"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]",
+        "[resourceId('Microsoft.App/managedEnvironments', variables('caeName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('azureOpenaiResourceId')))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(parameters('azureOpenaiResourceId'), variables('caName'), variables('cognitiveServicesOpenAIUserRoleId'))]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.App/containerApps', variables('caName')), '2024-03-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal",
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('cognitiveServicesOpenAIUserRoleId'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/containerApps', variables('caName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('azureSearchResourceId')))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(parameters('azureSearchResourceId'), variables('caName'), variables('searchIndexDataReaderRoleId'))]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.App/containerApps', variables('caName')), '2024-03-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal",
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('searchIndexDataReaderRoleId'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/containerApps', variables('caName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('cosmosResourceId')))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(parameters('cosmosResourceId'), variables('caName'), variables('cosmosDbDataContributorRoleId'))]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.App/containerApps', variables('caName')), '2024-03-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal",
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('cosmosDbDataContributorRoleId'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/containerApps', variables('caName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "containerAppFqdn": {
+      "type": "string",
+      "metadata": {
+        "description": "The FQDN of the deployed Container App."
+      },
+      "value": "[reference(resourceId('Microsoft.App/containerApps', variables('caName')), '2024-03-01').configuration.ingress.fqdn]"
+    },
+    "containerAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Container App."
+      },
+      "value": "[variables('caName')]"
+    },
+    "acrLoginServer": {
+      "type": "string",
+      "metadata": {
+        "description": "The ACR login server."
+      },
+      "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), '2023-07-01').loginServer]"
+    },
+    "managedIdentityPrincipalId": {
+      "type": "string",
+      "metadata": {
+        "description": "The system-assigned managed identity principal ID."
+      },
+      "value": "[reference(resourceId('Microsoft.App/containerApps', variables('caName')), '2024-03-01', 'full').identity.principalId]"
+    }
+  }
+}

@@ -19,6 +19,11 @@ GRAPH_SCOPES = [
     "https://graph.microsoft.com/Files.Read.All",
 ]
 
+# Azure AI Search scope for OBO flow (FoundryIQ approach)
+SEARCH_SCOPES = [
+    "https://search.azure.com/.default",
+]
+
 
 class AuthService:
     """Microsoft Entra ID authentication service.
@@ -68,9 +73,10 @@ class AuthService:
         if time.time() > exp:
             raise ValueError("Token expired: token has passed its expiration time")
 
-        # Validate audience
+        # Validate audience — accept both "client_id" and "api://client_id" formats
         aud = payload.get("aud", "")
-        if aud != self._client_id:
+        valid_audiences = {self._client_id, f"api://{self._client_id}"}
+        if aud not in valid_audiences:
             raise ValueError(f"Invalid audience (aud): expected {self._client_id}, got {aud}")
 
         # Validate issuer
@@ -126,6 +132,33 @@ class AuthService:
         error = result.get("error", "unknown")
         description = result.get("error_description", "OBO token exchange failed")
         raise RuntimeError(f"Token exchange failed via OBO: {error} — {description}")
+
+    async def get_search_token(self, user_assertion: str) -> str:
+        """Exchange user token for an Azure AI Search token using OBO flow.
+
+        Required for the FoundryIQ (remoteSharePoint) approach where the
+        KB retrieve API needs a delegated user identity.
+
+        Args:
+            user_assertion: The user's access token to exchange.
+
+        Returns:
+            Azure AI Search access token string.
+
+        Raises:
+            RuntimeError: If OBO token exchange fails.
+        """
+        result = self._msal_app.acquire_token_on_behalf_of(
+            user_assertion=user_assertion,
+            scopes=SEARCH_SCOPES,
+        )
+
+        if "access_token" in result:
+            return result["access_token"]
+
+        error = result.get("error", "unknown")
+        description = result.get("error_description", "OBO search token exchange failed")
+        raise RuntimeError(f"Search token exchange failed via OBO: {error} — {description}")
 
     def extract_user(self, claims: dict[str, Any]) -> User:
         """Extract a User model from JWT claims.
