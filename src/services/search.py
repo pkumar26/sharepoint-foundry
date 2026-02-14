@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
 
 from azure.search.documents import SearchClient
 from azure.search.documents.models import VectorizedQuery
@@ -14,11 +14,29 @@ from src.models.document import SearchResult
 logger = logging.getLogger(__name__)
 
 
-class SearchService:
+@runtime_checkable
+class SearchBackend(Protocol):
+    """Protocol defining the contract for any search backend.
+
+    All search implementations (indexer, foundryiq, indexed_sharepoint)
+    must satisfy this interface so they can be used interchangeably.
+    """
+
+    async def search_documents(
+        self,
+        query: str,
+        user_id: str,
+        group_ids: list[str],
+        top: int = 5,
+    ) -> list[SearchResult]: ...
+
+
+class IndexerSearchService:
     """Search SharePoint documents using Azure AI Search hybrid queries.
 
     Combines vector (HNSW), keyword (BM25), and semantic ranking.
     Applies ACL-based security trimming using user and group IDs.
+    This is the Approach 1 (direct index query) backend.
     """
 
     def __init__(
@@ -53,17 +71,22 @@ class SearchService:
         Returns:
             List of SearchResult objects sorted by relevance.
         """
-        # Build ACL security trimming filter
+        # Build ACL security trimming filter (only when group data is available)
         acl_filter = self._build_security_filter(user_id, group_ids)
 
         # Build search kwargs
         search_kwargs: dict[str, Any] = {
             "search_text": query,
-            "filter": acl_filter,
             "top": top,
             "query_type": "semantic",
             "semantic_configuration_name": "default",
         }
+
+        # Only apply the ACL filter when we have meaningful group data.
+        # Without real group memberships the filter is too restrictive
+        # (e.g. SharePoint-internal IDs vs Entra OIDs mismatch).
+        if acl_filter:
+            search_kwargs["filter"] = acl_filter
 
         # Add vector query if embedding client is available
         if self._embedding_client is not None:
@@ -115,7 +138,7 @@ class SearchService:
 
         return search_results
 
-    def _build_security_filter(self, user_id: str, group_ids: list[str]) -> str:
+    def _build_security_filter(self, user_id: str, group_ids: list[str]) -> str | None:
         """Build an OData filter for ACL-based security trimming.
 
         Args:
@@ -123,8 +146,20 @@ class SearchService:
             group_ids: User's Entra group IDs.
 
         Returns:
-            OData filter string for security trimming.
+            OData filter string for security trimming, or None if no
+            meaningful filter can be constructed (e.g. empty group_ids
+            and user_id may not match index ACL format).
         """
+        if not group_ids:
+            # Without group memberships we cannot construct a reliable
+            # ACL filter — the index may use SharePoint-internal IDs
+            # that won't match Entra OIDs.
+            logger.info(
+                "Skipping ACL filter — no group IDs available for user %s",
+                user_id,
+            )
+            return None
+
         parts: list[str] = [f"UserIds/any(u: u eq '{user_id}')"]
         for gid in group_ids:
             parts.append(f"GroupIds/any(g: g eq '{gid}')")
@@ -144,3 +179,7 @@ class SearchService:
             model="text-embedding-ada-002",
         )
         return response.data[0].embedding
+
+
+# Backward-compatible alias
+SearchService = IndexerSearchService

@@ -10,7 +10,7 @@ from autogen_agentchat.messages import TextMessage
 from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
 
 from src.models.document import SearchResult, SourceReference
-from src.services.search import SearchService
+from src.services.search import SearchBackend
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class SharePointQAAgent:
 
     def __init__(
         self,
-        search_service: SearchService,
+        search_service: SearchBackend,
         model_client: AzureOpenAIChatCompletionClient,
     ) -> None:
         self._search_service = search_service
@@ -142,7 +142,6 @@ class SharePointQAAgent:
                 f"[Document {i}]\n"
                 f"Title: {r.document_title}\n"
                 f"Source: {r.source_url}\n"
-                f"Site: {r.site_name}\n"
                 f"Content:\n{r.content}\n"
             )
         return "\n---\n".join(parts)
@@ -153,7 +152,6 @@ class SharePointQAAgent:
             SourceReference(
                 document_title=r.document_title,
                 document_url=r.source_url,
-                site_name=r.site_name,
                 excerpt=r.content[:500] if r.content else None,
                 relevance_score=r.relevance_score,
             )

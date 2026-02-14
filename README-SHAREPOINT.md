@@ -17,8 +17,8 @@ This guide walks through setting up the Azure AI Search pipeline to index ShareP
 
 ### Tools
 
-- [VS Code](https://code.visualstudio.com/) with the [REST Client extension](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) to execute requests from `setup.rest`
-- Alternatively, use the **Jupyter notebooks** in `notebooks/` — no copying commands needed
+- [VS Code](https://code.visualstudio.com/) with the **Jupyter notebooks** in `notebooks/` — executable cells, no copying commands needed
+- `pip install requests python-dotenv` for notebook dependencies
 
 ---
 
@@ -73,12 +73,11 @@ Uses `IndexedSharePointKnowledgeSource` to **auto-generate** a full indexer pipe
 
 ### How to run
 
-| Method | Files | Best for |
-|--------|-------|----------|
-| **REST Client** (VS Code extension) | `setup.rest` | Indexer approach only; quick send-request workflow |
-| **Jupyter Notebooks** | `notebooks/setup-indexer-approach.ipynb` | Indexer approach; executable cells, no copying |
-| **Jupyter Notebooks** | `notebooks/setup-foundryiq-approach.ipynb` | FoundryIQ approach; executable cells, no copying |
-| **Jupyter Notebooks** | `notebooks/setup-indexed-sharepoint-approach.ipynb` | Indexed knowledge source approach; executable cells, no copying |
+| Notebook | Approach |
+|----------|----------|
+| `notebooks/setup-indexer-approach.ipynb` | Approach 1: Manual indexer pipeline |
+| `notebooks/setup-foundryiq-approach.ipynb` | Approach 2: FoundryIQ / agentic retrieval |
+| `notebooks/setup-indexed-sharepoint-approach.ipynb` | Approach 3: Indexed SharePoint knowledge source |
 
 #### Notebook setup
 
@@ -90,7 +89,7 @@ Uses `IndexedSharePointKnowledgeSource` to **auto-generate** a full indexer pipe
 3. Install dependencies: `pip install requests python-dotenv`
 4. Open the notebook and run cells top-to-bottom
 
-> Both `notebooks/.env` and `.vscode/settings.json` are gitignored — secrets stay local.
+> `notebooks/.env` is gitignored — secrets stay local.
 
 ---
 
@@ -163,7 +162,7 @@ The search service uses its managed identity to call Azure OpenAI for embeddings
 
 ## 4. Run the Setup Steps (in order)
 
-Execute each request in `setup.rest` sequentially using the REST Client extension (click "Send Request" above each block).
+Open the appropriate notebook for your chosen approach and run cells top-to-bottom.
 
 ### Step 1: Create Data Source
 
@@ -297,15 +296,11 @@ Update using `PUT` with the full indexer definition. Common intervals:
 
 The production index has `permissionFilterOption: "enabled"`, which blocks all search queries that don't include a user identity token (e.g. Foundry playground, Search Explorer, curl).
 
-To test, **temporarily toggle the ACL filter off** using the requests in `setup.rest`:
+To test, **temporarily toggle the ACL filter off** by PUTting the index definition with `permissionFilterOption: "disabled"`:
 
-1. Run **"Disable ACL filter"** — PUTs the index definition with `permissionFilterOption: "disabled"`
+1. Disable ACL filter — PUT the index definition with `permissionFilterOption: "disabled"`
 2. Test your queries in the playground / Search Explorer
-3. Run **"Re-enable ACL filter"** — restores `permissionFilterOption: "enabled"`
-
-The toggle JSON files are in `scripts/`:
-- `scripts/index-acl-disabled.json`
-- `scripts/index-acl-enabled.json`
+3. Re-enable ACL filter — PUT with `permissionFilterOption: "enabled"`
 
 > **Important**: Always re-enable before production use. With ACLs disabled, any API-key-authenticated request can see all documents regardless of SharePoint permissions.
 
