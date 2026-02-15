@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 import uuid
@@ -26,6 +27,9 @@ from src.services.audit import AuditEntry, log_query
 from src.services.rate_limiter import RateLimiter, RateLimitExceededError
 
 logger = logging.getLogger(__name__)
+
+# Background tasks set — prevents GC of fire-and-forget coroutines
+_background_tasks: set[asyncio.Task[None]] = set()
 
 
 class HealthResponse(BaseModel):
@@ -73,9 +77,27 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     # Store settings on app state for access in endpoints
     app.state.settings = settings
 
+    # ── Cosmos DB client (singleton for app lifetime) ────────────────────
+    from azure.cosmos.aio import CosmosClient as AsyncCosmosClient
+    from azure.identity.aio import DefaultAzureCredential as AsyncCredential
+
+    from src.services.conversation import ConversationService
+
+    cosmos_credential = AsyncCredential()
+    cosmos_client = AsyncCosmosClient(settings.cosmos_endpoint, credential=cosmos_credential)
+    app.state.cosmos_client = cosmos_client
+    app.state.conversation_service = ConversationService(
+        client=cosmos_client,
+        database=settings.cosmos_database,
+        container=settings.cosmos_container,
+    )
+    logger.info("Cosmos DB client initialised")
+
     yield
 
     logger.info("SharePoint Q&A Agent shutting down")
+    await cosmos_client.close()
+    await cosmos_credential.close()
 
 
 async def get_current_user(request: Request) -> User:
@@ -132,6 +154,14 @@ async def get_current_user(request: Request) -> User:
                 message=str(e),
             ).model_dump(),
         ) from None
+
+
+def _get_conversation_service(request: Request):
+    """FastAPI dependency: return the singleton ConversationService."""
+    from src.services.conversation import ConversationService
+
+    svc: ConversationService = request.app.state.conversation_service
+    return svc
 
 
 def create_app() -> FastAPI:
@@ -251,8 +281,47 @@ def create_app() -> FastAPI:
                 ).model_dump(),
             )
 
-        # Determine conversation_id
-        conversation_id = body.conversation_id or str(uuid.uuid4())
+        # ── Conversation persistence ─────────────────────────────────────
+        from src.models.conversation import Message as ConvMessage
+
+        conversation_service = _get_conversation_service(request)
+        is_new_conversation = body.conversation_id is None
+        conversation_history: list[dict[str, str]] | None = None
+        conversation_id: str
+
+        try:
+            if is_new_conversation:
+                # Create a new conversation — use the model's auto UUID
+                conv = await conversation_service.create_conversation(
+                    user_id=current_user.user_id,
+                    title="New conversation",
+                )
+                conversation_id = conv.id
+            else:
+                conversation_id = body.conversation_id  # type: ignore[assignment]
+                # Load existing conversation and extract history for the agent
+                existing = await conversation_service.get_conversation(
+                    conversation_id=conversation_id,
+                    user_id=current_user.user_id,
+                )
+                if existing and existing.messages:
+                    conversation_history = [
+                        {"role": m.role, "content": m.content}
+                        for m in existing.messages
+                    ]
+
+            # Save user message
+            user_msg = ConvMessage(role="user", content=body.message)
+            await conversation_service.add_message(
+                conversation_id=conversation_id,
+                user_id=current_user.user_id,
+                message=user_msg,
+            )
+        except Exception:
+            # Graceful degradation — proceed without persistence
+            logger.warning("Conversation persistence failed — continuing without it", exc_info=True)
+            if is_new_conversation:
+                conversation_id = str(uuid.uuid4())
 
         try:
             # Import agent and search service
@@ -279,7 +348,7 @@ def create_app() -> FastAPI:
 
                 try:
                     obo_token = await auth_service.get_search_token(user_token)
-                    from azure.core.credentials import AccessToken, AzureKeyCredential  # noqa: F811
+                    from azure.core.credentials import AccessToken, AzureKeyCredential
 
                     class _OBOTokenCredential:
                         """Wraps an OBO access token as an Azure TokenCredential."""
@@ -356,11 +425,12 @@ def create_app() -> FastAPI:
                 model_client=model_client,
             )
 
-            # TODO: In US3, load conversation history from Cosmos DB
+            # Pass conversation history to the agent for multi-turn context
             result = await agent.answer_question(
                 question=body.message,
                 user_id=current_user.user_id,
                 group_ids=[],  # TODO: In US2, extract from Graph token
+                conversation_history=conversation_history,
             )
 
             latency_ms = int((time.monotonic() - start_time) * 1000)
@@ -397,6 +467,49 @@ def create_app() -> FastAPI:
                 source_references=[sr.model_dump() for sr in result.get("source_references", [])],
                 timestamp=datetime.now(tz=UTC).isoformat(),
             )
+
+            # ── Save assistant message & generate title ─────────────────
+            try:
+                assistant_conv_msg = ConvMessage(
+                    role="assistant",
+                    content=result["content"],
+                    source_references=result.get("source_references", []),
+                )
+                await conversation_service.add_message(
+                    conversation_id=conversation_id,
+                    user_id=current_user.user_id,
+                    message=assistant_conv_msg,
+                )
+
+                # Generate a title for new conversations (fire-and-forget)
+                if is_new_conversation:
+                    from src.services.title_generator import generate_title
+
+                    async def _update_title() -> None:
+                        try:
+                            title = await generate_title(
+                                user_message=body.message,
+                                assistant_message=result["content"],
+                                settings=settings,
+                            )
+                            await conversation_service.update_title(
+                                conversation_id=conversation_id,
+                                user_id=current_user.user_id,
+                                title=title,
+                            )
+                            logger.info(
+                                "Generated conversation title",
+                                extra={"conversation_id": conversation_id, "title": title},
+                            )
+                        except Exception:
+                            logger.warning("Title generation failed", exc_info=True)
+
+                    # Store reference to prevent GC before completion
+                    task = asyncio.create_task(_update_title())
+                    _background_tasks.add(task)
+                    task.add_done_callback(_background_tasks.discard)
+            except Exception:
+                logger.warning("Failed to save assistant message", exc_info=True)
 
             return ChatResponse(
                 conversation_id=conversation_id,
@@ -463,21 +576,8 @@ def create_app() -> FastAPI:
         offset: int = 0,
     ) -> ConversationListResponse:
         """List user's conversations, ordered by most recent first."""
-        settings: Settings = request.app.state.settings
-
         try:
-            from azure.cosmos.aio import CosmosClient as AsyncCosmosClient
-            from azure.identity.aio import DefaultAzureCredential as AsyncCredential
-
-            from src.services.conversation import ConversationService
-
-            credential = AsyncCredential()
-            cosmos_client = AsyncCosmosClient(settings.cosmos_endpoint, credential=credential)
-            service = ConversationService(
-                client=cosmos_client,
-                database=settings.cosmos_database,
-                container=settings.cosmos_container,
-            )
+            service = _get_conversation_service(request)
 
             convs = await service.list_conversations(
                 user_id=current_user.user_id,
@@ -524,21 +624,8 @@ def create_app() -> FastAPI:
         current_user: User = Depends(get_current_user),
     ) -> ConversationDetail:
         """Get a conversation with full message history."""
-        settings: Settings = request.app.state.settings
-
         try:
-            from azure.cosmos.aio import CosmosClient as AsyncCosmosClient
-            from azure.identity.aio import DefaultAzureCredential as AsyncCredential
-
-            from src.services.conversation import ConversationService
-
-            credential = AsyncCredential()
-            cosmos_client = AsyncCosmosClient(settings.cosmos_endpoint, credential=credential)
-            service = ConversationService(
-                client=cosmos_client,
-                database=settings.cosmos_database,
-                container=settings.cosmos_container,
-            )
+            service = _get_conversation_service(request)
 
             conv = await service.get_conversation(
                 conversation_id=conversation_id,

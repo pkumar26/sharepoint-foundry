@@ -156,6 +156,9 @@ var Conversations = (function () {
     }
     render();
     setActive(conversationId);
+
+    // Refresh after a short delay to pick up the LLM-generated title
+    setTimeout(() => refresh(), 3000);
   }
 
   /**
