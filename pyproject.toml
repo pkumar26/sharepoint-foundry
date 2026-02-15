@@ -32,6 +32,8 @@ dependencies = [
     "httpx>=0.27",
     # Required by FastAPI StaticFiles for serving frontend assets
     "aiofiles>=24.1",
+    # Required by azure-cosmos and azure-identity async clients
+    "aiohttp>=3.9",
 ]
 
 [project.optional-dependencies]

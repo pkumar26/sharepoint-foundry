@@ -502,12 +502,14 @@ az monitor metrics list \
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/health` | Health check (used by Container Apps probes) |
-| `POST` | `/chat` | Send a message to the Q&A agent |
-| `GET` | `/conversations` | List user's conversations |
-| `GET` | `/conversations/{id}` | Get conversation with message history |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/health` | No | Health check (used by Container Apps probes) |
+| `GET` | `/approaches` | No | List available search approaches and server default |
+| `GET` | `/auth/config` | No | Public Entra ID config for the SPA (tenant, client ID, scopes) |
+| `POST` | `/chat` | Yes | Send a message to the Q&A agent |
+| `GET` | `/conversations` | Yes | List user's conversations (from Cosmos DB) |
+| `GET` | `/conversations/{id}` | Yes | Get conversation with full message history |
 
 ### POST /chat
 
@@ -562,7 +564,18 @@ src/
     ├── auth.py                # Entra ID JWT validation + OBO token exchange
     ├── audit.py               # Query audit logging
     ├── conversation.py        # Cosmos DB conversation persistence
+    ├── title_generator.py     # LLM-generated conversation titles
     └── rate_limiter.py        # Per-user rate limiting
+
+static/                        # SPA web frontend (served by FastAPI StaticFiles)
+├── index.html                 # Single-page app shell
+├── css/
+│   └── styles.css             # Application styles
+└── js/
+    ├── app.js                 # App initialization & routing
+    ├── auth.js                # MSAL.js Entra ID authentication
+    ├── chat.js                # Chat UI & message handling
+    └── conversations.js       # Conversation list sidebar
 ```
 
 ---
