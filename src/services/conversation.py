@@ -154,3 +154,31 @@ class ConversationService:
             results.append(Conversation.from_cosmos_dict(item))
 
         return results
+
+    async def update_title(
+        self,
+        conversation_id: str,
+        user_id: str,
+        title: str,
+    ) -> None:
+        """Update the title of a conversation.
+
+        Args:
+            conversation_id: Target conversation UUID.
+            user_id: Owner's Entra object ID.
+            title: New title string (max 200 chars).
+        """
+        conv = await self.get_conversation(conversation_id, user_id)
+        if conv is None:
+            logger.warning(
+                "Cannot update title — conversation not found",
+                extra={"conversation_id": conversation_id},
+            )
+            return
+
+        conv.title = title[:200]
+        await self._container.upsert_item(conv.to_cosmos_dict())
+        logger.info(
+            "Updated conversation title",
+            extra={"conversation_id": conversation_id, "title": title[:200]},
+        )
